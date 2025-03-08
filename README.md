@@ -1,9 +1,10 @@
 # 微雪树莓派5 UPS 内核驱动
 > There is no warranty for this software. Use at your own risk.
+
 > 本软件不提供任何保证，使用风险自负。
 
 ## 简介
-![UPS HAT (E)](image.png)
+![UPS HAT (E)](images/image.png)
 本项目是一个用于树莓派5的UPS内核驱动，支持通过I2C接口与微雪的UPS模块进行通信。该驱动基于
 [微雪官方示例程序](https://www.waveshare.net/wiki/UPS_HAT_(E))开发，使用Linux内核的`I2C Subsystem`和`Power Supply Subsystem`进行实现。该驱动支持对UPS模块的双向升降压检测、充电状态监测等功能。
 
@@ -57,3 +58,13 @@ POWER_SUPPLY_TIME_TO_EMPTY_NOW=0
 POWER_SUPPLY_TIME_TO_FULL_NOW=8
 POWER_SUPPLY_CAPACITY_ALERT_MIN=5
 ```
+
+btop显示效果：
+![BTOP](images/image-1.png)
+## 卸载
+如果需要卸载驱动，可以使用以下命令：
+```bash
+sudo dkms remove rpi-ups/1.0
+```
+## 注意事项
+- 请确保树莓派5的I2C接口已启用，并且UPS模块已正确连接到树莓派5的I2C接口。
