@@ -36,7 +36,7 @@ lsmod | grep rpi_ups
 ```
 rpi_ups               16384  0
 ```
-4. 加载设备树
+5. 加载设备树
 ```bash
 sudo dtc -@ -I dts -O dtb -o /boot/firmware/overlays/rpi-ups-pi5.dtbo rpi-ups-pi5.dts
 ```
@@ -51,7 +51,12 @@ dtoverlay=rpi-ups-pi5
 dtparam=i2c_arm=on,i2c_arm_baudrate=10000
 ```
 
-5. 检查UPS模块是否正常工作
+6. 重启树莓派
+```bash
+sudo reboot
+```
+
+7. 检查UPS模块是否正常工作
 ```bash
 cat /sys/class/power_supply/rpi-ups-battery/uevent
 ```
