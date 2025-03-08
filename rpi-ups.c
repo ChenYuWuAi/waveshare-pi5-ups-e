@@ -201,7 +201,7 @@ static int rpi_ups_battery_get_property(struct power_supply *psy,
         break;
     case POWER_SUPPLY_PROP_ENERGY_NOW:
     {
-        int energy = (buf[6] | (buf[7] << 8)) * 14800;
+        int energy = (buf[6] | (buf[7] << 8)) * 14400;
         val->intval = energy;
         break;
     }
