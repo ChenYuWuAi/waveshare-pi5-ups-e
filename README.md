@@ -36,6 +36,21 @@ lsmod | grep rpi_ups
 ```
 rpi_ups               16384  0
 ```
+4. 加载设备树
+```bash
+sudo dtc -@ -I dts -O dtb -o /boot/firmware/overlays/rpi-ups-pi5.dtbo rpi-ups-pi5.dts
+```
+
+在`/boot/firmware/config.txt`文件中添加以下内容：
+```bash
+dtoverlay=rpi-ups-pi5
+```
+
+注意，请确保`/boot/firmware/config.txt`文件中已经启用I2C接口，并且设置了I2C波特率为10000，因为UPS模块单片机的I2C有总线锁死问题。
+```
+dtparam=i2c_arm=on,i2c_arm_baudrate=10000
+```
+
 5. 检查UPS模块是否正常工作
 ```bash
 cat /sys/class/power_supply/rpi-ups-battery/uevent
