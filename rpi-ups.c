@@ -19,7 +19,6 @@
 #define DESIGN_FULL_ENERGY_UWH 72000000 /* 72Wh */
 #define DESIGN_FULL_ENERGY_MAH 4800     /* 4800 mAh */
 
-/* 数据超时阈值（毫秒） */
 #define DATA_TIMEOUT_MS 5000
 
 struct rpi_ups_data
@@ -383,7 +382,7 @@ static const struct of_device_id rpi_ups_of_match[] = {
     {
         .compatible = "rpi,ups",
     },
-    {/* sentinel */}};
+    {}};
 MODULE_DEVICE_TABLE(of, rpi_ups_of_match);
 
 static struct i2c_driver rpi_ups_driver = {
@@ -400,4 +399,4 @@ module_i2c_driver(rpi_ups_driver);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Cheng Hao");
-MODULE_DESCRIPTION("Waveshare RaspberryPi UPS Driver (with periodic update, timeout and low battery shutdown)");
+MODULE_DESCRIPTION("Waveshare RaspberryPi UPS Driver");
