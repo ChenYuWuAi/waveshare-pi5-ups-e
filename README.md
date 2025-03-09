@@ -25,6 +25,8 @@ sudo apt install dkms linux-headers-$(uname -r)
 3. 安装驱动
 ```bash
 sudo dkms add .
+cd /usr/src/rpi-ups-0.1
+sudo dkms build rpi-ups/1.0
 sudo dkms build rpi-ups/1.0
 sudo dkms install rpi-ups/1.0
 ```
@@ -34,7 +36,7 @@ lsmod | grep rpi_ups
 ```
 如果输出类似如下信息，则表示驱动安装成功：
 ```
-rpi_ups               16384  0
+rpi_ups                12288  0
 ```
 5. 加载设备树
 ```bash
