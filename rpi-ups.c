@@ -13,10 +13,11 @@
 #include <linux/spinlock.h>
 #include <linux/jiffies.h>
 #include <linux/reboot.h>
+#include <linux/acpi.h>
 
 #define DRIVER_NAME "rpi_ups"
 
-#define DESIGN_FULL_ENERGY_UWH 72000000 /* 72Wh */
+#define DESIGN_FULL_ENERGY_UWH 69120000 /* 72Wh */
 #define DESIGN_FULL_ENERGY_MAH 4800     /* 4800 mAh */
 
 #define DATA_TIMEOUT_MS 5000
@@ -134,14 +135,27 @@ static int rpi_ups_update_thread(void *arg)
                 {
                     pr_err("RPI-UPS: I2C device 0x2d not detected, shutdown register write skipped.\n");
                 }
-                /* 触发系统关机 */
+/* 触发系统关机 */
+#ifdef CONFIG_ACPI
+                pr_info("RPI-UPS: Generating ACPI shutdown button event.\n");
+                acpi_bus_generate_netlink_event("button",
+                                                dev_name(&data->client->dev),
+                                                ACPI_BUTTON_NOTIFY_STATUS,
+                                                0);
+#else
+                pr_info("RPI-UPS: ACPI not enabled, calling kernel_power_off() directly.\n");
                 kernel_power_off();
+#endif
+                /* 结束线程 */
+                kthread_stop(data->update_thread);
+                pr_info("RPI-UPS: System shutdown initiated, exiting update thread.\n");
+                return 0;
                 break;
             }
             else
             {
                 pr_info("RPI-UPS: Low battery, system will shutdown in %d seconds if not recovered.\n",
-                        60 - 2 * low_counter);
+                        30 - low_counter);
             }
         }
         else
@@ -152,6 +166,35 @@ static int rpi_ups_update_thread(void *arg)
     }
     return 0;
 }
+
+static ssize_t rpi_ups_shutdown_store(struct device *dev,
+                                      struct device_attribute *attr,
+                                      const char *buf, size_t count)
+{
+    struct rpi_ups_data *data = dev_get_drvdata(dev);
+    int ret;
+
+    /* 如果用户写入 "shutdown" 则执行 I2C 写操作 */
+    if (strncmp(buf, "shutdown", 8) == 0)
+    {
+        /* 检查当前 I2C 地址是否为 0x2d */
+        if (data->client->addr != 0x2d)
+        {
+            dev_err(dev, "UPS board not found at address 0x2d\n");
+            return -ENODEV;
+        }
+        ret = i2c_smbus_write_byte_data(data->client, 0x01, 0x55);
+        if (ret < 0)
+        {
+            dev_err(dev, "Failed to write shutdown register: %d\n", ret);
+            return ret;
+        }
+        dev_info(dev, "Shutdown command sent to UPS board\n");
+    }
+    return count;
+}
+
+static DEVICE_ATTR(shutdown, S_IWUSR, NULL, rpi_ups_shutdown_store);
 
 /*
  * 电池设备 get_property：从缓存数据中返回信息，若数据超时则将 PRESENT 返回为 0
@@ -311,7 +354,7 @@ static int rpi_ups_probe(struct i2c_client *client)
 
     /* 注册电池设备 */
     data->battery_desc.name = "rpi-ups-battery";
-    data->battery_desc.type = POWER_SUPPLY_TYPE_UPS;
+    data->battery_desc.type = POWER_SUPPLY_TYPE_BATTERY;
     data->battery_desc.properties = rpi_ups_battery_props;
     data->battery_desc.num_properties = ARRAY_SIZE(rpi_ups_battery_props);
     data->battery_desc.get_property = rpi_ups_battery_get_property;
@@ -357,6 +400,15 @@ static int rpi_ups_probe(struct i2c_client *client)
         return ret;
     }
 
+    /* 添加 sysfs shutdown 属性 */
+    ret = device_create_file(&client->dev, &dev_attr_shutdown);
+    if (ret)
+    {
+        dev_err(&client->dev, "Failed to create shutdown sysfs attribute\n");
+        /* 根据需要进行清理 */
+        return ret;
+    }
+
     dev_info(&client->dev, "Raspberrypi UPS driver probed\n");
     return 0;
 }
@@ -364,9 +416,9 @@ static int rpi_ups_probe(struct i2c_client *client)
 static void rpi_ups_remove(struct i2c_client *client)
 {
     struct rpi_ups_data *data = i2c_get_clientdata(client);
-
     if (data->update_thread)
         kthread_stop(data->update_thread);
+    device_remove_file(&client->dev, &dev_attr_shutdown);
     power_supply_unregister(data->usb_charger);
     power_supply_unregister(data->battery);
     dev_info(&client->dev, "Raspberrypi UPS driver removed\n");
