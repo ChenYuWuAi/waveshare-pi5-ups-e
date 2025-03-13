@@ -25,8 +25,6 @@ sudo apt install dkms linux-headers-$(uname -r)
 3. 安装驱动
 ```bash
 sudo dkms add .
-cd /usr/src/rpi-ups-0.1
-sudo dkms build rpi-ups/1.0
 sudo dkms build rpi-ups/1.0
 sudo dkms install rpi-ups/1.0
 ```
