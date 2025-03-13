@@ -60,6 +60,7 @@ static enum power_supply_property rpi_ups_battery_props[] = {
 
 static enum power_supply_property rpi_ups_usb_charger_props[] = {
     POWER_SUPPLY_PROP_STATUS,      /* 充电状态 */
+    POWER_SUPPLY_PROP_PRESENT,     /* 充电器是否存在 */
     POWER_SUPPLY_PROP_VOLTAGE_NOW, /* 当前充电电压（单位：微伏） */
     POWER_SUPPLY_PROP_CURRENT_NOW, /* 当前充电电流（单位：微安） */
     POWER_SUPPLY_PROP_POWER_NOW,   /* 当前充电功率（单位：微瓦） */
@@ -78,6 +79,7 @@ static int rpi_ups_update_thread(void *arg)
     u8 status;
     int low_counter = 0; /* 低电量计数器 */
     int capacity, raw_current, voltage;
+    unsigned long last_update_jiffies;
 
     while (!kthread_should_stop())
     {
@@ -85,9 +87,12 @@ static int rpi_ups_update_thread(void *arg)
         ret = i2c_smbus_read_i2c_block_data(data->client, 0x20, 12, buf12);
         spin_lock_irqsave(&data->lock, flags);
         if (ret >= 0)
+        {
             memcpy(data->battery_buf, buf12, 12);
-        /* 更新数据时间戳 */
-        data->last_update_jiffies = jiffies;
+            /* 更新数据时间戳 */
+            data->last_update_jiffies = jiffies;
+            last_update_jiffies = data->last_update_jiffies;
+        }
         spin_unlock_irqrestore(&data->lock, flags);
 
         /* 读取 USB Charger 状态：寄存器 0x02，1 字节 */
@@ -113,9 +118,9 @@ static int rpi_ups_update_thread(void *arg)
 
         /*
          * 判断逻辑：如果电池容量低于 5%，且当前不在充电状态（raw_current < 50 表示低充电电流，
-         * 这里假设负数表示放电状态），则累计低电量计数
+         * 这里假设负数表示放电状态），而且电池存在（Jiffie未超时），则累计低电量计数
          */
-        if ((capacity <= 5) && (raw_current < 50))
+        if ((capacity <= 5) && (raw_current < 50) && (last_update_jiffies + msecs_to_jiffies(DATA_TIMEOUT_MS) > jiffies))
         {
             low_counter++;
             if (low_counter >= 30)
@@ -228,8 +233,13 @@ static int rpi_ups_battery_get_property(struct power_supply *psy,
         break;
     }
     case POWER_SUPPLY_PROP_PRESENT:
-        val->intval = 1;
+    {
+        if (time_after(now, data->last_update_jiffies + msecs_to_jiffies(DATA_TIMEOUT_MS)))
+            val->intval = 0;
+        else
+            val->intval = 1;
         break;
+    }
     case POWER_SUPPLY_PROP_VOLTAGE_NOW:
         val->intval = (buf[0] | (buf[1] << 8)) * 1000;
         break;
@@ -323,14 +333,22 @@ static int rpi_ups_usb_charger_get_property(struct power_supply *psy,
         else
             val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
         break;
+    case POWER_SUPPLY_PROP_PRESENT:
+    {
+        if (data->last_update_jiffies + msecs_to_jiffies(DATA_TIMEOUT_MS) > jiffies)
+            val->intval = 1;
+        else
+            val->intval = 0;
+        break;
+    }
     case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-        val->intval = (buf[0] | (buf[1] << 8));
+        val->intval = (buf[0] | (buf[1] << 8)) * 1000;
         break;
     case POWER_SUPPLY_PROP_CURRENT_NOW:
-        val->intval = (buf[2] | (buf[3] << 8));
+        val->intval = (buf[2] | (buf[3] << 8)) * 1000;
         break;
     case POWER_SUPPLY_PROP_POWER_NOW:
-        val->intval = (buf[4] | (buf[5] << 8));
+        val->intval = (buf[4] | (buf[5] << 8)) * 1000;
         break;
     default:
         return -EINVAL;
