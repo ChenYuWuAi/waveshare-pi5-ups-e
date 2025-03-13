@@ -25,8 +25,8 @@ sudo apt install dkms linux-headers-$(uname -r)
 3. 安装驱动
 ```bash
 sudo dkms add .
-sudo dkms build rpi-ups/1.0
-sudo dkms install rpi-ups/1.0
+sudo dkms build rpi-ups/2.0
+sudo dkms install rpi-ups/2.0
 ```
 4. 检查驱动是否安装成功
 ```bash
@@ -84,7 +84,7 @@ btop显示效果：
 ## 卸载
 如果需要卸载驱动，可以使用以下命令：
 ```bash
-sudo dkms remove rpi-ups/1.0
+sudo dkms remove rpi-ups/2.0
 ```
 ## 注意事项
 - 请确保树莓派5的I2C接口已启用，并且UPS模块已正确连接到树莓派5的I2C接口。
