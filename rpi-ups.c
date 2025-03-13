@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT or GPL
+// SPDX-License-Identifier: GPL-2.0 OR MIT
 /*
  * Waveshare RaspberryPi UPS Driver
  *
