@@ -78,8 +78,8 @@ static int rpi_ups_update_thread(void *arg)
     u8 buf6[6];
     u8 status;
     int low_counter = 0; /* 低电量计数器 */
-    int capacity, raw_current, voltage;
-    unsigned long last_update_jiffies;
+    int capacity = 100, raw_current, voltage; /* 电池容量、充电电流、电压，默认满电 */
+    unsigned long last_update_jiffies = 0; /* 上次更新，默认超时 */
 
     while (!kthread_should_stop())
     {
