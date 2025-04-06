@@ -81,9 +81,11 @@ POWER_SUPPLY_CAPACITY_ALERT_MIN=5
 ```
 
 btop显示效果：
+
 ![BTOP](images/image-1.png)
 
 gnome显示效果：
+
 ![GNOME](images/image-2.png)
 ## 卸载
 如果需要卸载驱动，可以使用以下命令：
