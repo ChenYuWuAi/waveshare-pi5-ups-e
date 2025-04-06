@@ -39,6 +39,7 @@ rpi_ups                12288  0
 5. 加载设备树
 ```bash
 sudo dtc -@ -I dts -O dtb -o /boot/firmware/overlays/rpi-ups-pi5.dtbo rpi-ups-pi5.dts
+sudo cp ./rpi-ups-pi5.dtbo /boot/firmware/overlays/
 ```
 
 在`/boot/firmware/config.txt`文件中添加以下内容：
@@ -81,6 +82,9 @@ POWER_SUPPLY_CAPACITY_ALERT_MIN=5
 
 btop显示效果：
 ![BTOP](images/image-1.png)
+
+gnome显示效果：
+![GNOME](images/image-2.png)
 ## 卸载
 如果需要卸载驱动，可以使用以下命令：
 ```bash
